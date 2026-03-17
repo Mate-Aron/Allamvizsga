@@ -119,8 +119,7 @@ $page = $_GET['page'] ?? 'logs';
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<div class="top-navbar">
-</div>
+<div class="top-navbar"></div>
 <div class="dashboard-container">
     <aside class="sidebar">
         <div class="brand"><h2>Admin Panel</h2></div>
@@ -129,6 +128,7 @@ $page = $_GET['page'] ?? 'logs';
                 <li><a href="?page=logs" class="nav-link <?= $page==='logs'?'active':'' ?>">Audit Logs</a></li>
                 <li><a href="?page=rules" class="nav-link <?= $page==='rules'?'active':'' ?>">Rules</a></li>
                 <li><a href="?page=edit_rule" class="nav-link <?= $page==='edit_rule'?'active':'' ?>">Edit Rule</a></li>
+                <li><a href="?page=analytics" class="nav-link <?= $page==='analytics'?'active':'' ?>">Analytics</a></li>         
             </ul>
         </nav>
         <div class="user-info">
@@ -144,7 +144,7 @@ $page = $_GET['page'] ?? 'logs';
                 <div class="log-header-top">
                     <h3>Audit Logs</h3>
                     <div class="header-actions">
-                        <form method="post" style="display: inline-block; margin-right: 15px;">
+                        <form method="post">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                             <input type="hidden" name="action" value="restart_httpd">
                             <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">🔄 Restart Apache</button>
@@ -188,7 +188,7 @@ $page = $_GET['page'] ?? 'logs';
                             
                             <?php if (!empty($log['root_cause_ids'])): ?>
                                 <div class="root-causes">
-                                    <strong>Activated Rules (Analysis):</strong>
+                                    <strong>Activated Rules:</strong>
                                     <?php foreach ($log['root_cause_ids'] as $rid): 
                                         $details = $log['rule_details'][$rid] ?? [];
                                         $target_val = $details['target'] ?? '';
@@ -216,14 +216,14 @@ $page = $_GET['page'] ?? 'logs';
                                         </div>
                                         <div class="action-buttons">
                                             <?php if($is_globally_whitelisted): ?>
-                                                <form method="POST" style="display:inline-block;">
+                                                <form method="POST">
                                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                                     <input type="hidden" name="action" value="undo_global_whitelist">
                                                     <input type="hidden" name="rule_id" value="<?= h($rid) ?>">
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Re-enable this rule globally">Undo Global</button>
                                                 </form>
                                             <?php else: ?>
-                                                <form method="POST" style="display:inline-block;">
+                                                <form method="POST">
                                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                                     <input type="hidden" name="action" value="disable_rule_globally">
                                                     <input type="hidden" name="rule_id" value="<?= h($rid) ?>">
@@ -233,7 +233,7 @@ $page = $_GET['page'] ?? 'logs';
 
                                             <?php if($target_val): ?>
                                                 <?php if($is_whitelisted): ?>
-                                                    <form method="POST" style="display:inline-block;">
+                                                    <form method="POST">
                                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                                         <input type="hidden" name="action" value="undo_whitelist">
                                                         <input type="hidden" name="rule_id" value="<?= h($rid) ?>">
@@ -241,7 +241,7 @@ $page = $_GET['page'] ?? 'logs';
                                                         <button type="submit" class="btn btn-sm btn-warning" title="Remove from whitelist">Undo IP+ID</button>
                                                     </form>
                                                 <?php elseif(!$is_globally_whitelisted): ?>
-                                                    <form method="POST" style="display:inline-block;">
+                                                    <form method="POST">
                                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                                         <input type="hidden" name="action" value="disable_target">
                                                         <input type="hidden" name="rule_id" value="<?= h($rid) ?>">
@@ -352,8 +352,8 @@ $page = $_GET['page'] ?? 'logs';
                     <span class="restart-hint"> Apache restart required for changes to take effect.</span>
                 </div>
             </form>
-            <div style="margin-top: 16px;">
-                <form method="post" style="display: inline;">
+            <div class="editor-footer">
+                <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <input type="hidden" name="action" value="restart_httpd">
                     <button type="submit" class="btn btn-warning">🔄 Restart Apache</button>
@@ -362,7 +362,122 @@ $page = $_GET['page'] ?? 'logs';
         <?php 
                 }
             }
-        break;
+        break; case 'analytics': 
+            // 1. Logok beolvasása
+            $all_logs = parse_modsec_log($AUDIT_LOG, 1000);
+            
+            // 2. Számlálók inicializálása
+            $total_events = count($all_logs);
+            $blocked_count = 0;
+            $ip_stats = [];
+            $rule_stats = [];
+            $rule_messages = [];
+
+            // 3. Adatok kinyerése és csoportosítása
+            foreach ($all_logs as $log) {
+                if ($log['final_action'] === 'BLOCKED') {
+                    $blocked_count++;
+                }
+
+                $ip = $log['source_ip'];
+                $ip_stats[$ip] = ($ip_stats[$ip] ?? 0) + 1;
+
+                foreach ($log['root_cause_ids'] as $rid) {
+                    $rule_stats[$rid] = ($rule_stats[$rid] ?? 0) + 1;
+                    if (!isset($rule_messages[$rid]) && isset($log['rule_details'][$rid]['msg'])) {
+                        $rule_messages[$rid] = $log['rule_details'][$rid]['msg'];
+                    }
+                }
+            }
+
+            // 4. Sorbarendezés csökkenő sorrendbe és a Top 5 kivágása
+            arsort($ip_stats);
+            $top_ips = array_slice($ip_stats, 0, 5, true);
+
+            arsort($rule_stats);
+            $top_rules = array_slice($rule_stats, 0, 5, true);
+            
+            // Adatok előkészítése a Chart.js számára
+            $chart_labels = json_encode(array_keys($top_rules));
+            $chart_data = json_encode(array_values($top_rules));
+            
+            // Blokkolási arány százalékban
+            $blocked_percent = $total_events > 0 ? round(($blocked_count / $total_events) * 100) : 0;
+        ?>
+            <div class="dashboard-section analytics-section">
+                <h2 class="analytics-title">ModSecurity Analytics</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                        <h4>Total Events Analyzed</h4>
+                        <div class="stat-value"><?= $total_events ?></div>
+                    </div>
+                    
+                    <div class="stat-card stat-red">
+                        <h4>Blocked Requests</h4>
+                        <div class="stat-value"><?= $blocked_count ?></div>
+                    </div>
+
+                    <div class="stat-card stat-yellow">
+                        <h4>Block Rate</h4>
+                        <div class="stat-value"><?= $blocked_percent ?>%</div>
+                    </div>
+                </div>
+
+                <div class="analytics-panels">
+                    <div class="panel-card">
+                        <h3 class="panel-title">Top 5 Attacker IPs</h3>
+                        <table class="attacker-table">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Hits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($top_ips)): ?>
+                                    <tr><td colspan="2" class="no-data">No data available.</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($top_ips as $ip => $count): ?>
+                                    <tr>
+                                        <td class="attacker-ip"><?= h($ip) ?></td>
+                                        <td class="attacker-hits"><?= $count ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3 class="panel-title">📈 Top Triggered Rules</h3>
+                        
+                        <div class="chart-wrapper">
+                            <?php if (empty($top_rules)): ?>
+                                <span class="no-data">No rule data available.</span>
+                            <?php else: ?>
+                                <canvas id="rulesChart"></canvas>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if (!empty($top_rules)): ?>
+                        <div class="rule-descriptions">
+                            <h4>Rule Descriptions</h4>
+                            <ul class="rule-desc-list">
+                                <?php foreach($top_rules as $rid => $count): ?>
+                                    <li>
+                                        <span class="rule-desc-id"><?= $rid ?></span> 
+                                        <span><?= h($rule_messages[$rid] ?? 'Unknown Rule Description') ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <?php endif; ?>
+
+                    </div>
+                </div>
+            </div>
+        <?php break;
         default: echo "<div class='info-box'>The page was not found.</div>";
         endswitch; 
         ?>
@@ -393,6 +508,48 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     refreshTimer = setInterval(fetchNewLogs, 3000);
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('rulesChart');
+    if (ctx) {
+        const labels = <?= $chart_labels ?? '[]' ?>;
+        const data = <?= $chart_data ?? '[]' ?>;
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.map(id => 'Rule ' + id),
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#ef4444', 
+                        '#f59e0b', 
+                        '#3b82f6', 
+                        '#10b981', 
+                        '#8b5cf6'  
+                    ],
+                    borderColor: '#1f2937', 
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#9ca3af',
+                            font: { family: 'Inter, sans-serif' }
+                        }
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 </body>

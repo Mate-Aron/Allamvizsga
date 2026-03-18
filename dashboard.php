@@ -128,6 +128,7 @@ $page = $_GET['page'] ?? 'logs';
                 <li><a href="?page=logs" class="nav-link <?= $page==='logs'?'active':'' ?>">Audit Logs</a></li>
                 <li><a href="?page=rules" class="nav-link <?= $page==='rules'?'active':'' ?>">Rules</a></li>
                 <li><a href="?page=edit_rule" class="nav-link <?= $page==='edit_rule'?'active':'' ?>">Edit Rule</a></li>
+                <li><a href="?page=testing" class="nav-link <?= $page==='testing'?'active':'' ?>">Testing Console</a></li>
                 <li><a href="?page=analytics" class="nav-link <?= $page==='analytics'?'active':'' ?>">Analytics</a></li>         
             </ul>
         </nav>
@@ -362,18 +363,70 @@ $page = $_GET['page'] ?? 'logs';
         <?php 
                 }
             }
-        break; case 'analytics': 
-            // 1. Logok beolvasása
+        break; case 'testing': 
+            $payloads = get_test_payloads();
+        ?>
+            <div class="dashboard-section testing-console-section">
+                <h2 class="testing-title">Penetration Testing Console</h2>
+
+                <div class="payload-buttons">
+                    <button type="button" class="btn btn-sm btn-payload" onclick="setPayload(<?= htmlspecialchars(json_encode($payloads['sqli']), ENT_QUOTES) ?>)">
+                        SQL Injection (SQLi)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-payload" onclick="setPayload(<?= htmlspecialchars(json_encode($payloads['xss']), ENT_QUOTES) ?>)">
+                        Cross-Site Scripting (XSS)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-payload" onclick="setPayload(<?= htmlspecialchars(json_encode($payloads['lfi']), ENT_QUOTES) ?>)">
+                        Path Traversal (LFI)
+                    </button>
+                </div>
+
+                <div class="terminal-input-group">
+                    <span class="terminal-prompt">root@test:~#</span>
+                    <input type="text" id="targetUrl" class="terminal-input" value="<?= h($payloads['base']) ?>/">
+                    <button type="button" class="btn btn-success" onclick="fireAttack()">Attack</button>
+                </div>
+
+                <div class="iframe-container">
+                    <div class="iframe-header">
+                        <span>Target Response</span>
+                        <span id="loadingIndicator" class="iframe-loader">Waiting for server...</span>
+                    </div>
+                    <iframe id="attackFrame" class="attack-iframe" src="<?= h($payloads['base']) ?>/"></iframe>
+                </div>
+            </div>
+
+            <script>
+                function setPayload(url) {
+                    document.getElementById('targetUrl').value = url;
+                    fireAttack();
+                }
+
+                function fireAttack() {
+                    const url = document.getElementById('targetUrl').value;
+                    if (!url) return;
+
+                    const frame = document.getElementById('attackFrame');
+                    const loader = document.getElementById('loadingIndicator');
+                    
+                    loader.style.display = 'inline';
+                    frame.src = url;
+
+                    frame.onload = function() {
+                        loader.style.display = 'none';
+                    };
+                }
+            </script>
+        <?php break; case 'analytics': 
+
             $all_logs = parse_modsec_log($AUDIT_LOG, 1000);
-            
-            // 2. Számlálók inicializálása
+
             $total_events = count($all_logs);
             $blocked_count = 0;
             $ip_stats = [];
             $rule_stats = [];
             $rule_messages = [];
 
-            // 3. Adatok kinyerése és csoportosítása
             foreach ($all_logs as $log) {
                 if ($log['final_action'] === 'BLOCKED') {
                     $blocked_count++;
@@ -390,18 +443,15 @@ $page = $_GET['page'] ?? 'logs';
                 }
             }
 
-            // 4. Sorbarendezés csökkenő sorrendbe és a Top 5 kivágása
             arsort($ip_stats);
             $top_ips = array_slice($ip_stats, 0, 5, true);
 
             arsort($rule_stats);
             $top_rules = array_slice($rule_stats, 0, 5, true);
-            
-            // Adatok előkészítése a Chart.js számára
+
             $chart_labels = json_encode(array_keys($top_rules));
             $chart_data = json_encode(array_values($top_rules));
             
-            // Blokkolási arány százalékban
             $blocked_percent = $total_events > 0 ? round(($blocked_count / $total_events) * 100) : 0;
         ?>
             <div class="dashboard-section analytics-section">

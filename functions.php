@@ -223,3 +223,15 @@ function restart_httpd() {
     $flag = '/var/www/html/studentworks/flags/restart.flag';
     return @touch($flag);
 }
+
+// 9. PENETRATION TESTING HELPER
+function get_test_payloads() {
+
+    $base_url = "https://studentworks.ms.sapientia.ro";
+    return [
+        'base'  => $base_url,
+        'sqli'  => $base_url . "/?id=1' OR '1'='1",
+        'xss'   => $base_url . "/?search=<script>alert('XSS')</script>",
+        'lfi'   => $base_url . "/?file=../../../../etc/passwd",
+    ];
+}

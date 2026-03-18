@@ -43,61 +43,131 @@ body, html { height: 100%; background: var(--bg-main); color: var(--text-main); 
 .user-info { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); }
 .main-content { flex: 1; padding: 48px 56px; overflow-y: auto; background: var(--bg-main); }
 
-/* CARDS & LOGS */
+/* ==========================================
+   CARDS & LOGS (Elegáns, átlátható stílus)
+   ========================================== */
 .log-card { 
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; 
-    margin-bottom: 24px; box-shadow: var(--shadow); overflow: hidden; transition: all 0.3s ease;
+    background-color: var(--bg-card); /* Szigorúan csak a színt állítjuk */
+    background-image: none; /* Alapból nincs színátmenet */
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    margin-bottom: 24px; 
+    /* Finom, elegáns alap árnyék a kemény fekete helyett */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1); 
+    overflow: hidden; 
+    /* Selymesen sima animáció minden változásra */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
 }
-.log-card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-.log-card.blocked { border-left: 4px solid var(--danger); background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 5%); }
-.log-card.alert { border-left: 4px solid var(--warning); background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 5%); }
 
-.log-header { padding: 16px 24px; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+/* Ráhúzás (Hover) effektus - Lebegő, prémium érzés */
+.log-card:hover { 
+    border-color: #4b5563; /* Finoman felvillanó keret */
+    box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.4); /* Mélyebb, lágy árnyék */
+    transform: translateY(-3px); /* Kicsit jobban megemelkedik */
+}
+
+/* Blokkolt kérések (Piros) - Javított rétegezés */
+.log-card.blocked { 
+    border-left: 4px solid #f87171; /* Lágy korall piros */
+    background-color: var(--bg-card); /* Megtartjuk az általad választott alapszínt! */
+    /* Egy nagyon finom, átlátszó piros réteget festünk a szín FELÉ, ami 15%-nál eltűnik */
+    background-image: linear-gradient(90deg, rgba(248, 113, 113, 0.08) 0%, transparent 15%); 
+}
+
+/* Figyelmeztetések (Sárga) - Javított rétegezés */
+.log-card.alert { 
+    border-left: 4px solid var(--warning); 
+    background-color: var(--bg-card); 
+    background-image: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 15%); 
+}
+
+
+.log-header { 
+    padding: 16px 24px; 
+    background: rgba(32, 32, 32, 0.15); 
+    border-bottom: 1px solid var(--border); 
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; 
+}
 .log-body { padding: 24px; }
 .log-container { width: 100%; }
+
 .log-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .log-header-top h3 { font-size: 1.75rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
 .log-source { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
 .log-header-info { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.log-time { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
+.log-time { font-weight: 600; color: #e5e7eb; font-size: 0.95rem; }
 .log-ip { color: var(--text-muted); font-weight: 500; }
-.log-ip strong { color: var(--accent); }
-.log-hostname { font-size: 0.9rem; color: var(--text-muted); }
+.log-ip strong { color: var(--text-main); font-weight: 700; }
+.log-hostname { font-size: 0.9rem; color: #6b7280; }
 
 .log-row { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
 .log-row strong { display: inline-block; min-width: 80px; color: var(--text-muted); font-weight: 600; }
-.attack-type { color: #fca5a5; font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
-.request-code { background: rgba(99, 102, 241, 0.1); padding: 4px 10px; color: #a5b4fc; font-family: 'Courier New', monospace; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2); font-size: 0.85rem; font-weight: 500; }
 
-/* RULE ACTION ROWS */
+/* Visszafogottabb támadás-típus kiemelés */
+.attack-type { 
+    color: #f87171; 
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    background: rgba(248, 113, 113, 0.1);
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+.request-code { background: rgba(99, 102, 241, 0.1); padding: 4px 10px; color: #a5b4fc; font-family: 'Courier New', monospace; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.2); font-size: 0.85rem; font-weight: 500; }
+
+/* ==========================================
+   RULE ACTION ROWS (Kártya a kártyában effekt)
+   ========================================== */
 .rule-action-row { 
     display: flex; justify-content: space-between; align-items: flex-start; 
-    background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 10px; 
-    padding: 18px; margin-top: 15px; transition: all 0.2s ease;
+    background: var(--bg-main); /* Sötétebb háttér, hogy elváljon a külső kártyától! */
+    border: 1px solid var(--border); 
+    border-radius: 10px; 
+    padding: 20px; 
+    margin-top: 15px; 
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); /* Finom mélységérzet */
 }
-.rule-action-row:hover { background: rgba(255, 255, 255, 0.04); border-color: var(--border-bright); }
+.rule-action-row:hover { background: #131d35; border-color: var(--border-bright); }
 .rule-info { flex: 1; margin-right: 20px; }
-.root-causes { margin-bottom: 16px; }
-.rule-id { display: inline-block; color: #d1d5db; font-weight: 500; }
-.rule-message { font-weight: 600; color: #f3f4f6; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.5; }
+.root-causes { margin-bottom: 16px; margin-top: 20px; }
+.root-causes > strong { color: #d1d5db; display: block; margin-bottom: 12px; font-size: 0.95rem;}
+.rule-id { display: inline-block; color: #9ca3af; font-family: 'Courier New', monospace; font-weight: 600; font-size: 0.85rem; }
+.rule-message { font-weight: 600; color: #f3f4f6; margin-bottom: 10px; font-size: 0.95rem; line-height: 1.5; }
 
-/* BADGES */
-.badge { padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
-.status-blocked { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
-.status-allowed { background: rgba(16, 185, 129, 0.15); color: #86efac; border: 1px solid rgba(16, 185, 129, 0.3); }
-.target-badge { background: rgba(3, 105, 161, 0.2); color: #7ee8ff; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(3, 105, 161, 0.4); display: inline-block; font-weight: 500; }
+/* ==========================================
+   BADGES (Modern pirula forma)
+   ========================================== */
+.badge { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-blocked { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+.status-allowed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.target-badge { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(56, 189, 248, 0.2); display: inline-block; font-weight: 500; }
 
-.severity-badge { color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
-.severity-emergency, .severity-critical, .severity-error { background-color: var(--danger); }
-.severity-alert, .severity-warning { background-color: var(--warning); }
-.severity-notice, .severity-info, .severity-debug { background-color: var(--accent); }
+.severity-badge { color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+.severity-emergency, .severity-critical, .severity-error { background-color: #ef4444; }
+.severity-alert, .severity-warning { background-color: #f59e0b; }
+.severity-notice, .severity-info, .severity-debug { background-color: #6366f1; }
 .severity-default { background-color: var(--border-bright); }
 
-/* TAGS & DATA */
-.matched-data-box { background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); padding: 10px 12px; margin: 8px 0; font-family: 'Courier New', monospace; font-size: 0.85rem; color: #fca5a5; border-radius: 4px; }
-.tags-container { margin-top: 8px; }
-.tag-item { display: inline-block; background: rgba(99, 102, 241, 0.1); color: #a5b4fc; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px; margin-bottom: 4px; border: 1px solid rgba(99, 102, 241, 0.2); font-weight: 500; }
-.rule-badges { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* ==========================================
+   TAGS & DATA (Olvasmányos bizonyítékok)
+   ========================================== */
+.matched-data-box { 
+    background: #0f172a; /* Nem piros, hanem sötét kódszerkesztő szín! */
+    border-left: 3px solid #6366f1; /* Elegáns indigó szegély */
+    padding: 12px 16px; 
+    margin: 10px 0; 
+    font-family: 'Courier New', monospace; 
+    font-size: 0.85rem; 
+    color: #d1d5db; /* Világosszürke betűk, nem bántja a szemet */
+    border-radius: 6px; 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+.tags-container { margin-top: 10px; }
+.tag-item { display: inline-block; background: rgba(156, 163, 175, 0.1); color: #9ca3af; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; margin-bottom: 6px; border: 1px solid rgba(156, 163, 175, 0.2); font-weight: 500; transition: all 0.2s; }
+.tag-item:hover { background: rgba(156, 163, 175, 0.2); color: #d1d5db; }
+.rule-badges { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* BUTTONS & FORMS */
 .header-actions form { display: inline-block; margin-right: 15px; }
@@ -216,3 +286,56 @@ pre { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid 
 .rule-desc-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #bbb; }
 .rule-desc-list li { margin-bottom: 10px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
 .rule-desc-id { background: var(--bg-inner); color: var(--text-main); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+
+
+/* ==========================================
+   PENETRATION TESTING CONSOLE
+   ========================================== */
+.testing-console-section { padding: 20px; }
+.testing-title { color: var(--text-main); margin-bottom: 20px; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.5px; }
+.testing-desc { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; font-size: 0.95rem; }
+
+.payload-buttons { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn-secondary { background-color: #4b5563; color: white; border: 1px solid #374151; }
+.btn-secondary:hover { background-color: #374151; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.btn-payload {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.btn-payload:hover {
+    background-color: rgba(99, 102, 241, 0.25);
+    color: #ffffff;
+    border-color: rgba(99, 102, 241, 0.8);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+}
+.terminal-input-group { 
+    background-color: var(--bg-main); 
+    padding: 15px 20px; 
+    border-radius: 8px; 
+    border: 1px solid var(--border); 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 24px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.terminal-prompt { color: var(--success); font-family: 'Courier New', monospace; margin-right: 15px; font-size: 16px; font-weight: bold; }
+.terminal-input { flex: 1; background: transparent; border: none; color: var(--text-main); font-family: 'Courier New', monospace; font-size: 15px; outline: none; width: 100%; }
+
+.iframe-container { background-color: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-lg); }
+.iframe-header { background-color: var(--bg-inner); padding: 10px 15px; font-size: 12px; color: #cbd5e1; font-family: 'Courier New', monospace; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; }
+.iframe-loader { display: none; color: var(--warning); font-weight: 600; }
+
+.attack-iframe { 
+    width: 100%; 
+    height: 70vh;
+    min-height: 800px;
+    border: none; 
+    background-color: #ffffff; 
+    display: block;
+}

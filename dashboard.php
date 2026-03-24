@@ -140,37 +140,48 @@ $page = $_GET['page'] ?? 'logs';
         <?= $action_result ?>
         
             <?php switch($page): case 'logs': 
+
                 $search_ip = trim($_GET['search_ip'] ?? '');
                 
-                $limit = ($search_ip !== '') ? 1000 : $MAX_ENTRIES;
-                $raw_logs = parse_modsec_log($AUDIT_LOG, $limit); 
+                $raw_logs = parse_modsec_log($AUDIT_LOG, 1000); 
                 
-                $logs = [];
-                
+                $filtered_logs = [];
                 if ($search_ip !== '') {
                     foreach ($raw_logs as $l) {
                         if (strpos($l['source_ip'], $search_ip) !== false) {
-                            $logs[] = $l;
+                            $filtered_logs[] = $l;
                         }
                     }
                 } else {
-                    $logs = $raw_logs;
+                    $filtered_logs = $raw_logs;
                 }
+                $items_per_page = 20;
+                $total_items = count($filtered_logs);
+                $total_pages = ceil($total_items / $items_per_page);
+                if ($total_pages < 1) $total_pages = 1;
+
+                $p = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+                if ($p < 1) $p = 1;
+                if ($p > $total_pages) $p = $total_pages;
+
+                $offset = ($p - 1) * $items_per_page;
+                $current_page_logs = array_slice($filtered_logs, $offset, $items_per_page);
             ?>
             
             <div class="log-container">
                 <div class="log-header-top">
                     <h3>Audit Logs</h3>
                         <div class="header-actions">
-                            <form method="get" style="display: inline-block; margin-right: 15px;">
+                            <form method="get" class="search-form">
                                 <input type="hidden" name="page" value="logs">
-                                <input type="text" name="search_ip" value="<?= h($search_ip) ?>" placeholder="Search IP (e.g. 45.205...)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                <input type="text" name="search_ip" value="<?= h($search_ip) ?>" placeholder="Search IP" class="filter-input">
                                 <button type="submit" class="btn btn-primary btn-sm">Filter</button>
                                 <?php if ($search_ip !== ''): ?>
                                     <a href="?page=logs" class="btn btn-warning btn-sm">Clear</a>
                                 <?php endif; ?>
                             </form>
-                            <form method="post" style="display: inline-block;">
+
+                            <form method="post" class="inline-form">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                 <input type="hidden" name="action" value="restart_httpd">
                                 <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">🔄 Restart Apache</button>
@@ -184,9 +195,9 @@ $page = $_GET['page'] ?? 'logs';
                     </div>
             
                 <div id="live-logs-wrapper">
-                    <?php if (empty($logs)): ?>
+                    <?php if (empty($current_page_logs)): ?>
                         <div class="info-box">The file is not readable or empty: <code><?= h($AUDIT_LOG) ?></code></div>
-                    <?php else: foreach ($logs as $log):
+                    <?php else: foreach ($current_page_logs as $log):
                 
                         $is_card_whitelisted = false;
                         foreach ($log['root_cause_ids'] as $rid) {
@@ -257,7 +268,7 @@ $page = $_GET['page'] ?? 'logs';
                                                 </form>
                                             <?php endif; ?>
 
-                                            <?php if($target_val): ?>
+                                            
                                                 <?php if($is_whitelisted): ?>
                                                     <form method="POST">
                                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
@@ -275,7 +286,7 @@ $page = $_GET['page'] ?? 'logs';
                                                         <button type="submit" class="btn btn-sm btn-info" title="Whitelist this IP for this rule">Whitelist IP+ID</button>
                                                     </form>
                                                 <?php endif; ?>
-                                            <?php endif; ?>
+                                            
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -285,6 +296,28 @@ $page = $_GET['page'] ?? 'logs';
                         </div>
                     </div>
                     <?php endforeach; endif; ?>
+                    <?php if ($total_pages > 1): ?>
+                        <div class="pagination-container">
+                            <?php 
+                                $base_url = "?page=logs";
+                                if ($search_ip !== '') $base_url .= "&search_ip=" . urlencode($search_ip);
+                            ?>
+                            
+                            <?php if ($p > 1): ?>
+                                <a href="<?= $base_url ?>&p=<?= $p - 1 ?>" class="btn btn-primary">⬅ Previous</a>
+                            <?php else: ?>
+                                <button class="btn btn-primary" disabled>⬅ Previous</button>
+                            <?php endif; ?>
+                            
+                            <span class="pagination-info">Page: <?= $p ?> / <?= $total_pages ?> <span class="pagination-total">(Total: <?= $total_items ?> logs)</span></span>
+                            
+                            <?php if ($p < $total_pages): ?>
+                                <a href="<?= $base_url ?>&p=<?= $p + 1 ?>" class="btn btn-primary">Next ➡</a>
+                            <?php else: ?>
+                                <button class="btn btn-primary" disabled>Next ➡</button>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -516,7 +549,7 @@ $page = $_GET['page'] ?? 'logs';
                                     <?php foreach ($top_ips as $ip => $count): ?>
                                     <tr>
                                         <td class="attacker-ip">
-                                            <a href="?page=logs&search_ip=<?= urlencode($ip) ?>" style="color: #3b82f6; text-decoration: underline;" title="View all attacks from this IP">
+                                            <a href="?page=logs&search_ip=<?= urlencode($ip) ?>" class="ip-link" title="View all attacks from this IP">
                                                 <?= h($ip) ?>
                                             </a>
                                         </td>

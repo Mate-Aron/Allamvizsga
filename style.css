@@ -339,3 +339,73 @@ pre { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid 
     background-color: #ffffff; 
     display: block;
 }
+
+
+
+/* ==========================================================================
+   Keresőmotor és Szűrő (Filter) stílusok
+   ========================================================================== */
+.search-form {
+    display: inline-block;
+    margin-right: 15px;
+}
+
+.inline-form {
+    display: inline-block;
+}
+
+.filter-input {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-input:focus {
+    border-color: #3b82f6;
+}
+
+/* ==========================================================================
+   Lapozó (Pagination) stílusok
+   ========================================================================== */
+.pagination-container {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.pagination-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-total {
+    font-size: 0.85em;
+    color: #6b7280;
+}
+
+/* Letiltott (disabled) gombok stílusa */
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Megakadályozza a kattintást is */
+}
+
+/* ==========================================================================
+   Analitika - IP Link stílusok
+   ========================================================================== */
+.ip-link {
+    color: #3b82f6;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.ip-link:hover {
+    color: #2563eb;
+    text-decoration: none;
+}

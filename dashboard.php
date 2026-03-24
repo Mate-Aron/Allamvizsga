@@ -139,24 +139,49 @@ $page = $_GET['page'] ?? 'logs';
     <main class="main-content">
         <?= $action_result ?>
         
-        <?php switch($page): case 'logs': $logs = parse_modsec_log($AUDIT_LOG, $MAX_ENTRIES); ?>
+            <?php switch($page): case 'logs': 
+                $search_ip = trim($_GET['search_ip'] ?? '');
+                
+                $limit = ($search_ip !== '') ? 1000 : $MAX_ENTRIES;
+                $raw_logs = parse_modsec_log($AUDIT_LOG, $limit); 
+                
+                $logs = [];
+                
+                if ($search_ip !== '') {
+                    foreach ($raw_logs as $l) {
+                        if (strpos($l['source_ip'], $search_ip) !== false) {
+                            $logs[] = $l;
+                        }
+                    }
+                } else {
+                    $logs = $raw_logs;
+                }
+            ?>
             
             <div class="log-container">
                 <div class="log-header-top">
                     <h3>Audit Logs</h3>
-                    <div class="header-actions">
-                        <form method="post">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                            <input type="hidden" name="action" value="restart_httpd">
-                            <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">🔄 Restart Apache</button>
-                        </form>
+                        <div class="header-actions">
+                            <form method="get" style="display: inline-block; margin-right: 15px;">
+                                <input type="hidden" name="page" value="logs">
+                                <input type="text" name="search_ip" value="<?= h($search_ip) ?>" placeholder="Search IP (e.g. 45.205...)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;">
+                                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                                <?php if ($search_ip !== ''): ?>
+                                    <a href="?page=logs" class="btn btn-warning btn-sm">Clear</a>
+                                <?php endif; ?>
+                            </form>
+                            <form method="post" style="display: inline-block;">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                <input type="hidden" name="action" value="restart_httpd">
+                                <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">🔄 Restart Apache</button>
+                            </form>
 
-                        <label class="auto-refresh-label">
-                            <input type="checkbox" id="autoRefresh" checked> 🔴 Live Update
-                        </label>
-                        <span class="log-source">Source: <?= h(basename($AUDIT_LOG)) ?></span>
+                            <label class="auto-refresh-label">
+                                <input type="checkbox" id="autoRefresh" checked> 🔴 Live Update
+                            </label>
+                            <span class="log-source">Source: <?= h(basename($AUDIT_LOG)) ?></span>
+                        </div>
                     </div>
-                </div>
             
                 <div id="live-logs-wrapper">
                     <?php if (empty($logs)): ?>
@@ -444,7 +469,7 @@ $page = $_GET['page'] ?? 'logs';
             }
 
             arsort($ip_stats);
-            $top_ips = array_slice($ip_stats, 0, 5, true);
+            $top_ips = array_slice($ip_stats, 0, 50, true);
 
             arsort($rule_stats);
             $top_rules = array_slice($rule_stats, 0, 5, true);
@@ -476,7 +501,7 @@ $page = $_GET['page'] ?? 'logs';
 
                 <div class="analytics-panels">
                     <div class="panel-card">
-                        <h3 class="panel-title">Top 5 Attacker IPs</h3>
+                        <h3 class="panel-title">Top 50 Attacker IPs</h3>
                         <table class="attacker-table">
                             <thead>
                                 <tr>
@@ -490,7 +515,11 @@ $page = $_GET['page'] ?? 'logs';
                                 <?php else: ?>
                                     <?php foreach ($top_ips as $ip => $count): ?>
                                     <tr>
-                                        <td class="attacker-ip"><?= h($ip) ?></td>
+                                        <td class="attacker-ip">
+                                            <a href="?page=logs&search_ip=<?= urlencode($ip) ?>" style="color: #3b82f6; text-decoration: underline;" title="View all attacks from this IP">
+                                                <?= h($ip) ?>
+                                            </a>
+                                        </td>
                                         <td class="attacker-hits"><?= $count ?></td>
                                     </tr>
                                     <?php endforeach; ?>

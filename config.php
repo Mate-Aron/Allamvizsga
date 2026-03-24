@@ -4,7 +4,7 @@ $RULES_DIR_ACTIVATED = '/etc/httpd/modsecurity.d/activated_rules';
 $RULES_DIR_LOCAL     = '/etc/httpd/modsecurity.d/local_rules';
 $WHITELIST_FILE      = '/etc/httpd/modsecurity.d/whitelist.conf';
 
-$MAX_ENTRIES = 30;
+$MAX_ENTRIES = 1000;
 
 $INFRA_RULES = [949110, 980130, 949100, 959100];
 

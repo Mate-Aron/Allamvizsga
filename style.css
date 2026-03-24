@@ -409,3 +409,15 @@ pre { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid 
     color: #2563eb;
     text-decoration: none;
 }
+
+/* ==========================================================================
+   Analitika - GeoIP (Zászlók és Országok)
+   ========================================================================== */
+.geo-info {
+    font-size: 0.85em;
+    margin-left: 10px;
+    color: #6b7280;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}

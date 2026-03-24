@@ -477,7 +477,7 @@ $page = $_GET['page'] ?? 'logs';
             </script>
         <?php break; case 'analytics': 
 
-            $all_logs = parse_modsec_log($AUDIT_LOG, 1000);
+            $all_logs = parse_modsec_log($AUDIT_LOG, $MAX_ENTRIES);
 
             $total_events = count($all_logs);
             $blocked_count = 0;
@@ -548,10 +548,14 @@ $page = $_GET['page'] ?? 'logs';
                                 <?php else: ?>
                                     <?php foreach ($top_ips as $ip => $count): ?>
                                     <tr>
-                                        <td class="attacker-ip">
+                                        <td class="attacker-ip-cell" data-ip="<?= h($ip) ?>">
                                             <a href="?page=logs&search_ip=<?= urlencode($ip) ?>" class="ip-link" title="View all attacks from this IP">
                                                 <?= h($ip) ?>
                                             </a>
+                                            <span class="geo-info">
+                                                <span class="geo-flag"></span>
+                                                <span class="geo-country"></span>
+                                            </span>
                                         </td>
                                         <td class="attacker-hits"><?= $count ?></td>
                                     </tr>
@@ -662,6 +666,39 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ipCells = document.querySelectorAll('.attacker-ip-cell');
+    if (ipCells.length === 0) return;
+
+    function getFlagEmoji(countryCode) {
+        if (!countryCode) return '';
+        const codePoints = countryCode
+            .toUpperCase()
+            .split('')
+            .map(char => 127397 + char.charCodeAt());
+        return String.fromCodePoint(...codePoints);
+    }
+
+    ipCells.forEach(cell => {
+        const ip = cell.getAttribute('data-ip');
+        const flagSpan = cell.querySelector('.geo-flag');
+        const countrySpan = cell.querySelector('.geo-country');
+        fetch(`https://get.geojs.io/v1/ip/geo/${ip}.json`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.country) {
+                    flagSpan.textContent = getFlagEmoji(data.country_code);
+                    countrySpan.textContent = data.country;
+                }
+            })
+            .catch(err => {
+                console.log('GeoIP fetch skipped for: ' + ip);
+            });
+    });
 });
 </script>
 </body>

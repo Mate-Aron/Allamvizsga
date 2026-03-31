@@ -235,3 +235,18 @@ function get_test_payloads() {
         'lfi'   => $base_url . "/?file=../../../../etc/passwd",
     ];
 }
+
+// 10. NEW RULE ID GENERATOR
+function getNextRuleId($filePath, $baseId = 1000000) {
+    if (!file_exists($filePath) || filesize($filePath) === 0) {
+        return $baseId;
+    }
+
+    $content = file_get_contents($filePath);
+    
+    if (preg_match_all('/id:(\d+)/', $content, $matches)) {
+        $maxId = max($matches[1]);
+        return $maxId + 1;
+    }
+    return $baseId;
+}

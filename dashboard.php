@@ -5,6 +5,8 @@ require_once __DIR__ . '/functions.php';
 $provided_user = $_SERVER['PHP_AUTH_USER'] ?? null;
 $provided_pw   = $_SERVER['PHP_AUTH_PW'] ?? null;
 
+
+
 if (!$provided_user || ($provided_user !== $BASIC_AUTH_USER || !password_verify($provided_pw, $BASIC_AUTH_PASS_HASH))) {
     header('WWW-Authenticate: Basic realm="ModSecurity Dashboard"');
     header('HTTP/1.0 401 Unauthorized');
@@ -28,16 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              $action_result = "<div class='error'>Error: The whitelist file is not writable.<br>$WHITELIST_FILE</div>";
         } else {
             if ($action === 'disable_target') {
-                $rid = $_POST['rule_id']; 
-                $source_ip = $_POST['source_ip'];
-                $unique_id = rand(1000000, 9999999);
-                $line = "SecRule REMOTE_ADDR \"@ipMatch $source_ip\" \"id:$unique_id,phase:1,pass,nolog,ctl:ruleRemoveById=$rid\"\n";
+                    $rid = $_POST['rule_id']; 
+                    $source_ip = $_POST['source_ip'];
+                    
+                    $unique_id = getNextRuleId($WHITELIST_FILE, 1000004);
+                    
+                    $line = "SecRule REMOTE_ADDR \"@ipMatch $source_ip\" \"id:$unique_id,phase:1,pass,nolog,ctl:ruleRemoveById=$rid\"\n";
 
-                if (atomic_append_file($WHITELIST_FILE, $line)) {
-                    $action_result = "<div class='success'>✓ IP $source_ip whitelisted for rule $rid</div>";
-                } else {
-                    $action_result = "<div class='error'>Save failed. Permission denied.</div>";
-                }
+                    if (atomic_append_file($WHITELIST_FILE, $line)) {
+                        $action_result = "<div class='success'>✓ IP $source_ip whitelisted for rule $rid (New ID: $unique_id)</div>";
+                    } else {
+                        $action_result = "<div class='error'>Save failed. Permission denied.</div>";
+                    }
                 
             } elseif ($action === 'undo_whitelist') {
                 $rid = $_POST['rule_id']; 
@@ -600,31 +604,44 @@ $page = $_GET['page'] ?? 'logs';
     </main>
 </div>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const autoRefreshCheckbox = document.getElementById('autoRefresh');
-    const logsWrapper = document.getElementById('live-logs-wrapper');
-    let refreshTimer;
+    let isLiveUpdatePaused = false; // A főkapcsolónk
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        const autoRefreshCheckbox = document.getElementById('autoRefresh');
+        const logsWrapper = document.getElementById('live-logs-wrapper');
+        let refreshTimer;
 
-    if (!autoRefreshCheckbox || !logsWrapper) return;
+        if (!autoRefreshCheckbox || !logsWrapper) return;
 
-    function fetchNewLogs() {
-        if (!autoRefreshCheckbox.checked) return;
-        fetch(window.location.href)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newWrapper = doc.getElementById('live-logs-wrapper');
-                
-                if (newWrapper && logsWrapper.innerHTML !== newWrapper.innerHTML) {
-                    logsWrapper.innerHTML = newWrapper.innerHTML;
-                }
-            })
-            .catch(err => console.error('Error refreshing logs:', err));
-    }
+        function fetchNewLogs() {
+            if (!autoRefreshCheckbox.checked || isLiveUpdatePaused) return;
 
-    refreshTimer = setInterval(fetchNewLogs, 3000);
-});
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newWrapper = doc.getElementById('live-logs-wrapper');
+                    
+                    if (newWrapper && logsWrapper.innerHTML !== newWrapper.innerHTML) {
+                        logsWrapper.innerHTML = newWrapper.innerHTML;
+                    }
+                })
+                .catch(err => console.error('Error refreshing logs:', err));
+        }
+
+        refreshTimer = setInterval(fetchNewLogs, 3000);
+        document.addEventListener('click', function(event) {
+            
+            const toggleButton = event.target.closest('.raw-log-details'); 
+            
+            if (toggleButton) {
+                isLiveUpdatePaused = !isLiveUpdatePaused;
+                if (isLiveUpdatePaused) autoRefreshCheckbox.checked = false;
+                 else autoRefreshCheckbox.checked = true;
+            }
+        });
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

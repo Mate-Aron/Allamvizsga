@@ -147,7 +147,7 @@ $page = $_GET['page'] ?? 'logs';
 
                 $search_ip = trim($_GET['search_ip'] ?? '');
                 
-                $raw_logs = parse_modsec_log($AUDIT_LOG, 1000); 
+                $raw_logs = parse_modsec_log($AUDIT_LOG, $MAX_ENTRIES); 
                 
                 $filtered_logs = [];
                 if ($search_ip !== '') {
@@ -485,35 +485,64 @@ $page = $_GET['page'] ?? 'logs';
 
             $total_events = count($all_logs);
             $blocked_count = 0;
+            
+            // Adatgyűjtő tömbök az új statisztikákhoz
             $ip_stats = [];
             $rule_stats = [];
             $rule_messages = [];
+            $time_stats = [];
+            $uri_stats = [];
+            $attack_type_stats = [];
+            $method_stats = [];
 
             foreach ($all_logs as $log) {
                 if ($log['final_action'] === 'BLOCKED') {
                     $blocked_count++;
                 }
 
+                // 1. IP Statisztika
                 $ip = $log['source_ip'];
                 $ip_stats[$ip] = ($ip_stats[$ip] ?? 0) + 1;
 
-                foreach ($log['root_cause_ids'] as $rid) {
-                    $rule_stats[$rid] = ($rule_stats[$rid] ?? 0) + 1;
-                    if (!isset($rule_messages[$rid]) && isset($log['rule_details'][$rid]['msg'])) {
-                        $rule_messages[$rid] = $log['rule_details'][$rid]['msg'];
-                    }
+                // 3. Idővonal statisztika (Órákra kerekítve)
+                if (preg_match('/\:(\d{2})\:\d{2}\:\d{2}/', $log['time'], $matches)) {
+                    $hour = $matches[1] . ':00';
+                    $time_stats[$hour] = ($time_stats[$hour] ?? 0) + 1;
                 }
+
+                // 4. URI Statisztika
+                $uri = $log['uri'] ?? 'Unknown';
+                $uri_stats[$uri] = ($uri_stats[$uri] ?? 0) + 1;
+
+                // 5. Támadási Típus Statisztika
+                $atk = $log['attack_type'] ?? 'Unknown';
+                $attack_type_stats[$atk] = ($attack_type_stats[$atk] ?? 0) + 1;
+
+                // 6. HTTP Metódus Statisztika
+                $meth = $log['method'] ?? 'Unknown';
+                $method_stats[$meth] = ($method_stats[$meth] ?? 0) + 1;
             }
 
-            arsort($ip_stats);
-            $top_ips = array_slice($ip_stats, 0, 50, true);
+            // Adatok rendezése és vágása
+            arsort($ip_stats); $top_ips = array_slice($ip_stats, 0, 50, true);
+            arsort($uri_stats); $top_uris = array_slice($uri_stats, 0, 5, true);
+            arsort($attack_type_stats);
+            arsort($method_stats);
+            ksort($time_stats); // Kronológiai sorrend az idővonalhoz
 
-            arsort($rule_stats);
-            $top_rules = array_slice($rule_stats, 0, 5, true);
-
-            $chart_labels = json_encode(array_keys($top_rules));
-            $chart_data = json_encode(array_values($top_rules));
             
+            $trend_labels = json_encode(array_keys($time_stats));
+            $trend_data = json_encode(array_values($time_stats));
+
+            $uri_labels = json_encode(array_keys($top_uris));
+            $uri_data = json_encode(array_values($top_uris));
+
+            $attack_labels = json_encode(array_keys($attack_type_stats));
+            $attack_data = json_encode(array_values($attack_type_stats));
+
+            $method_labels = json_encode(array_keys($method_stats));
+            $method_data = json_encode(array_values($method_stats));
+
             $blocked_percent = $total_events > 0 ? round(($blocked_count / $total_events) * 100) : 0;
         ?>
             <div class="dashboard-section analytics-section">
@@ -533,6 +562,31 @@ $page = $_GET['page'] ?? 'logs';
                     <div class="stat-card stat-yellow">
                         <h4>Block Rate</h4>
                         <div class="stat-value"><?= $blocked_percent ?>%</div>
+                    </div>
+                </div>
+
+                <div class="analytics-panels" style="margin-bottom: 20px;">
+                    <div class="panel-card" style="width: 100%;">
+                        <h3 class="panel-title">Attack Trend (Timeline)</h3>
+                        <div class="chart-wrapper" style="height: 300px;">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-panels" style="margin-bottom: 20px;">
+                    <div class="panel-card">
+                        <h3 class="panel-title">Top Targeted URIs</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="uriChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <h3 class="panel-title">Attack Types</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="attackTypeChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -569,16 +623,6 @@ $page = $_GET['page'] ?? 'logs';
                         </table>
                     </div>
 
-                    <div class="panel-card">
-                        <h3 class="panel-title">📈 Top Triggered Rules</h3>
-                        
-                        <div class="chart-wrapper">
-                            <?php if (empty($top_rules)): ?>
-                                <span class="no-data">No rule data available.</span>
-                            <?php else: ?>
-                                <canvas id="rulesChart"></canvas>
-                            <?php endif; ?>
-                        </div>
 
                         <?php if (!empty($top_rules)): ?>
                         <div class="rule-descriptions">
@@ -593,7 +637,6 @@ $page = $_GET['page'] ?? 'logs';
                             </ul>
                         </div>
                         <?php endif; ?>
-
                     </div>
                 </div>
             </div>
@@ -604,7 +647,7 @@ $page = $_GET['page'] ?? 'logs';
     </main>
 </div>
 <script>
-    let isLiveUpdatePaused = false; // A főkapcsolónk
+    let isLiveUpdatePaused = false;
     
     document.addEventListener("DOMContentLoaded", function() {
         const autoRefreshCheckbox = document.getElementById('autoRefresh');
@@ -632,9 +675,7 @@ $page = $_GET['page'] ?? 'logs';
 
         refreshTimer = setInterval(fetchNewLogs, 3000);
         document.addEventListener('click', function(event) {
-            
             const toggleButton = event.target.closest('.raw-log-details'); 
-            
             if (toggleButton) {
                 isLiveUpdatePaused = !isLiveUpdatePaused;
                 if (isLiveUpdatePaused) autoRefreshCheckbox.checked = false;
@@ -643,80 +684,96 @@ $page = $_GET['page'] ?? 'logs';
         });
     });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const ctx = document.getElementById('rulesChart');
-    if (ctx) {
-        const labels = <?= $chart_labels ?? '[]' ?>;
-        const data = <?= $chart_data ?? '[]' ?>;
 
-        new Chart(ctx, {
-            type: 'doughnut',
+    // 2. Attack Trend Timeline (Line)
+    const ctxTrend = document.getElementById('trendChart');
+    if (ctxTrend) {
+        new Chart(ctxTrend, {
+            type: 'line',
             data: {
-                labels: labels.map(id => 'Rule ' + id),
+                labels: <?= $trend_labels ?? '[]' ?>,
                 datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        '#ef4444', 
-                        '#f59e0b', 
-                        '#3b82f6', 
-                        '#10b981', 
-                        '#8b5cf6'  
-                    ],
-                    borderColor: '#1f2937', 
-                    borderWidth: 2
+                    label: 'Total Events',
+                    data: <?= $trend_data ?? '[]' ?>,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: '#9ca3af',
-                            font: { family: 'Inter, sans-serif' }
-                        }
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // 3. Top URIs (Bar)
+    const ctxUri = document.getElementById('uriChart');
+    if (ctxUri) {
+        new Chart(ctxUri, {
+            type: 'bar',
+            data: {
+                labels: <?= $uri_labels ?? '[]' ?>,
+                datasets: [{
+                    label: 'Hits',
+                    data: <?= $uri_data ?? '[]' ?>,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
+                }]
+            },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // 4. Attack Types (Pie)
+    const ctxAttack = document.getElementById('attackTypeChart');
+    if (ctxAttack) {
+        new Chart(ctxAttack, {
+            type: 'pie',
+            data: {
+                labels: <?= $attack_labels ?? '[]' ?>,
+                datasets: [{
+                    data: <?= $attack_data ?? '[]' ?>,
+                    backgroundColor: ['#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b'],
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+        });
+    }
+
+    // GeoIP Fetcher
+    const ipCells = document.querySelectorAll('.attacker-ip-cell');
+    if (ipCells.length > 0) {
+        function getFlagEmoji(countryCode) {
+            if (!countryCode) return '';
+            const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+
+        ipCells.forEach(cell => {
+            const ip = cell.getAttribute('data-ip');
+            const flagSpan = cell.querySelector('.geo-flag');
+            const countrySpan = cell.querySelector('.geo-country');
+            
+            fetch(`https://get.geojs.io/v1/ip/geo/${ip}.json`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.country) {
+                        flagSpan.textContent = getFlagEmoji(data.country_code);
+                        countrySpan.textContent = data.country;
                     }
-                }
-            }
+                })
+                .catch(err => {
+                    console.log('GeoIP fetch skipped for: ' + ip);
+                });
         });
     }
 });
 </script>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const ipCells = document.querySelectorAll('.attacker-ip-cell');
-    if (ipCells.length === 0) return;
-
-    function getFlagEmoji(countryCode) {
-        if (!countryCode) return '';
-        const codePoints = countryCode
-            .toUpperCase()
-            .split('')
-            .map(char => 127397 + char.charCodeAt());
-        return String.fromCodePoint(...codePoints);
-    }
-
-    ipCells.forEach(cell => {
-        const ip = cell.getAttribute('data-ip');
-        const flagSpan = cell.querySelector('.geo-flag');
-        const countrySpan = cell.querySelector('.geo-country');
-        fetch(`https://get.geojs.io/v1/ip/geo/${ip}.json`)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.country) {
-                    flagSpan.textContent = getFlagEmoji(data.country_code);
-                    countrySpan.textContent = data.country;
-                }
-            })
-            .catch(err => {
-                console.log('GeoIP fetch skipped for: ' + ip);
-            });
-    });
-});
-</script>
 </body>
 </html>

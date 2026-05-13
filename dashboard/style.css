@@ -1,0 +1,423 @@
+:root {
+    --bg-main: #0f172a;
+    --bg-sidebar: #111827;
+    --bg-card: #1f2937;
+    --bg-inner: #374151;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --success-hover: #059669;
+    --border: #374151;
+    --border-color: var(--border);
+    --border-bright: #4b5563;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body, html { height: 100%; background: var(--bg-main); color: var(--text-main); transition: background 0.3s ease; }
+
+.top-navbar { padding: 0; margin: 0; background: transparent; box-shadow: none; }
+
+/* LAYOUT & SIDEBAR */
+.dashboard-container { display: flex; min-height: 100vh; }
+.sidebar { 
+    width: 260px; background: linear-gradient(180deg, var(--bg-sidebar) 0%, #0d111f 100%);
+    padding: 32px 20px; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+.brand h2 { font-size: 1.5rem; margin-bottom: 40px; color: var(--text-main); font-weight: 700; letter-spacing: -0.5px; }
+
+.nav-link {
+    display: block; padding: 12px 16px; color: var(--text-muted); text-decoration: none;
+    border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-size: 0.95rem; font-weight: 500;
+}
+.nav-link:hover { background: rgba(99, 102, 241, 0.1); color: var(--accent); transform: translateX(2px); }
+.nav-link.active { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+
+.user-info { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); }
+.main-content { flex: 1; padding: 48px 56px; overflow-y: auto; background: var(--bg-main); }
+
+/* ==========================================
+   CARDS & LOGS (Elegáns, átlátható stílus)
+   ========================================== */
+.log-card { 
+    background-color: var(--bg-card); /* Szigorúan csak a színt állítjuk */
+    background-image: none; /* Alapból nincs színátmenet */
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    margin-bottom: 24px; 
+    /* Finom, elegáns alap árnyék a kemény fekete helyett */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1); 
+    overflow: hidden; 
+    /* Selymesen sima animáció minden változásra */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+/* Ráhúzás (Hover) effektus - Lebegő, prémium érzés */
+.log-card:hover { 
+    border-color: #4b5563; /* Finoman felvillanó keret */
+    box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.4); /* Mélyebb, lágy árnyék */
+    transform: translateY(-3px); /* Kicsit jobban megemelkedik */
+}
+
+/* Blokkolt kérések (Piros) - Javított rétegezés */
+.log-card.blocked { 
+    border-left: 4px solid #f87171; /* Lágy korall piros */
+    background-color: var(--bg-card); /* Megtartjuk az általad választott alapszínt! */
+    /* Egy nagyon finom, átlátszó piros réteget festünk a szín FELÉ, ami 15%-nál eltűnik */
+    background-image: linear-gradient(90deg, rgba(248, 113, 113, 0.08) 0%, transparent 15%); 
+}
+
+/* Figyelmeztetések (Sárga) - Javított rétegezés */
+.log-card.alert { 
+    border-left: 4px solid var(--warning); 
+    background-color: var(--bg-card); 
+    background-image: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 15%); 
+}
+
+
+.log-header { 
+    padding: 16px 24px; 
+    background: rgba(32, 32, 32, 0.15); 
+    border-bottom: 1px solid var(--border); 
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; 
+}
+.log-body { padding: 24px; }
+.log-container { width: 100%; }
+
+.log-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.log-header-top h3 { font-size: 1.75rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+.log-source { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+.log-header-info { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.log-time { font-weight: 600; color: #e5e7eb; font-size: 0.95rem; }
+.log-ip { color: var(--text-muted); font-weight: 500; }
+.log-ip strong { color: var(--text-main); font-weight: 700; }
+.log-hostname { font-size: 0.9rem; color: #6b7280; }
+
+.log-row { margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.log-row strong { display: inline-block; min-width: 80px; color: var(--text-muted); font-weight: 600; }
+
+/* Visszafogottabb támadás-típus kiemelés */
+.attack-type { 
+    color: #f87171; 
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    background: rgba(248, 113, 113, 0.1);
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+.request-code { background: rgba(99, 102, 241, 0.1); padding: 4px 10px; color: #a5b4fc; font-family: 'Courier New', monospace; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.2); font-size: 0.85rem; font-weight: 500; }
+
+/* ==========================================
+   RULE ACTION ROWS (Kártya a kártyában effekt)
+   ========================================== */
+.rule-action-row { 
+    display: flex; justify-content: space-between; align-items: flex-start; 
+    background: var(--bg-main); /* Sötétebb háttér, hogy elváljon a külső kártyától! */
+    border: 1px solid var(--border); 
+    border-radius: 10px; 
+    padding: 20px; 
+    margin-top: 15px; 
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); /* Finom mélységérzet */
+}
+.rule-action-row:hover { background: #131d35; border-color: var(--border-bright); }
+.rule-info { flex: 1; margin-right: 20px; }
+.root-causes { margin-bottom: 16px; margin-top: 20px; }
+.root-causes > strong { color: #d1d5db; display: block; margin-bottom: 12px; font-size: 0.95rem;}
+.rule-id { display: inline-block; color: #9ca3af; font-family: 'Courier New', monospace; font-weight: 600; font-size: 0.85rem; }
+.rule-message { font-weight: 600; color: #f3f4f6; margin-bottom: 10px; font-size: 0.95rem; line-height: 1.5; }
+
+/* ==========================================
+   BADGES (Modern pirula forma)
+   ========================================== */
+.badge { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-blocked { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+.status-allowed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.target-badge { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(56, 189, 248, 0.2); display: inline-block; font-weight: 500; }
+
+.severity-badge { color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+.severity-emergency, .severity-critical, .severity-error { background-color: #ef4444; }
+.severity-alert, .severity-warning { background-color: #f59e0b; }
+.severity-notice, .severity-info, .severity-debug { background-color: #6366f1; }
+.severity-default { background-color: var(--border-bright); }
+
+/* ==========================================
+   TAGS & DATA (Olvasmányos bizonyítékok)
+   ========================================== */
+.matched-data-box { 
+    background: #0f172a; /* Nem piros, hanem sötét kódszerkesztő szín! */
+    border-left: 3px solid #6366f1; /* Elegáns indigó szegély */
+    padding: 12px 16px; 
+    margin: 10px 0; 
+    font-family: 'Courier New', monospace; 
+    font-size: 0.85rem; 
+    color: #d1d5db; /* Világosszürke betűk, nem bántja a szemet */
+    border-radius: 6px; 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+.tags-container { margin-top: 10px; }
+.tag-item { display: inline-block; background: rgba(156, 163, 175, 0.1); color: #9ca3af; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; margin-bottom: 6px; border: 1px solid rgba(156, 163, 175, 0.2); font-weight: 500; transition: all 0.2s; }
+.tag-item:hover { background: rgba(156, 163, 175, 0.2); color: #d1d5db; }
+.rule-badges { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* BUTTONS & FORMS */
+.header-actions form { display: inline-block; margin-right: 15px; }
+.action-buttons { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 140px; }
+.action-buttons form { width: 100%; display: flex; }
+.action-buttons .btn { width: 100%; text-align: center; }
+.btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; border: none; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease; white-space: nowrap; font-family: inherit; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-sm { padding: 8px 12px; font-size: 0.8rem; }
+.btn-primary, .btn-info { background: var(--accent); color: white; }
+.btn-primary:hover, .btn-info:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: var(--success-hover); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: var(--danger-hover); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+.btn-warning { background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid #d97706; }
+.btn-warning:hover { background-color: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+
+/* ALERTS & PRE */
+.info-box { background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 14px 16px; border-radius: 8px; color: #93c5fd; font-weight: 500; }
+.error { background: rgba(239, 68, 68, 0.15); border-left: 3px solid var(--danger); color: #fca5a5; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 500; }
+.success { background: rgba(16, 185, 129, 0.15); border-left: 3px solid var(--success); color: #86efac; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-weight: 500; }
+pre { background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; overflow-x: auto; color: #d1d5db; }
+.raw-log-details { margin-top: 16px; cursor: pointer; }
+.raw-log-details summary { color: var(--accent); padding: 8px 12px; border-radius: 6px; font-weight: 500; user-select: none; transition: all 0.2s ease; }
+.raw-log-details summary:hover { background: rgba(99, 102, 241, 0.1); color: var(--accent-hover); }
+
+/* RULES TABLE */
+.toolbar { display: flex; gap: 12px; margin-bottom: 32px; background: rgba(255, 255, 255, 0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+.toolbar form { display: flex; gap: 10px; flex: 1; }
+.search-input { flex: 1; min-width: 250px; padding: 10px 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-size: 0.95rem; }
+.search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+.rules-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.rules-table thead { background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid var(--border); }
+.rules-table th { padding: 14px 18px; text-align: left; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; }
+.rules-table th.col-id { width: 80px; }
+.rules-table td { padding: 16px 18px; border-bottom: 1px solid var(--border); color: var(--text-main); }
+.rules-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.rules-table tbody tr:last-child td { border-bottom: none; }
+.rules-table strong { color: var(--accent); font-weight: 600; }
+.file-name { font-family: 'Courier New', monospace; font-size: 0.85rem; color: #d1d5db; }
+.rules-table code { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+.rules-table details { margin-top: 8px; font-size: 0.9rem; cursor: pointer; }
+.rules-table summary { color: var(--accent); font-weight: 500; padding: 4px; border-radius: 4px; transition: 0.2s; }
+.rules-table summary:hover { background: rgba(99, 102, 241, 0.1); color: var(--accent-hover); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-style: italic; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--border); }
+.rules-table-section { margin-top: 48px; }
+.rules-table-section h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 16px; color: var(--text-main); }
+.rule-msg { font-weight: 600; color: var(--text-main); }
+.rule-code { display: block; margin-top: 6px; color: var(--accent); }
+
+/* EDITOR */
+.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.editor-header h2, .editor-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 20px; }
+.editor-form { display: flex; flex-direction: column; gap: 16px; }
+.code-editor { width: 100%; min-height: 500px; padding: 16px; background: #0a0e1a; color: #d1d5db; border: 1px solid var(--border); border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.6; resize: vertical; }
+.code-editor:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+.editor-actions { display: flex; align-items: center; gap: 16px; }
+.editor-footer { margin-top: 16px; }
+.restart-hint { color: var(--warning); font-style: italic; font-size: 0.9rem; }
+.file-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+.file-list h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; }
+.file-list ul { list-style: none; }
+.file-list li { padding: 10px 12px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.02); border-radius: 6px; border: 1px solid transparent; transition: all 0.2s ease; }
+.file-list li:hover { background: rgba(255, 255, 255, 0.04); border-color: var(--border-bright); }
+.file-list a { color: var(--accent); font-weight: 500; text-decoration: none; }
+.file-list a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+/* WHITELIST STYLES */
+.log-card.whitelisted-card { border-left: 4px solid #475569; opacity: 0.85; }
+.badge.status-whitelisted { background-color: #334155; color: #cbd5e1; border: 1px solid #475569; }
+.whitelisted-row { background-color: rgba(255, 255, 255, 0.03); border-left: 4px solid #475569; color: #94a3b8; }
+.whitelisted-row .severity-badge, .whitelisted-row .target-badge, .whitelisted-row .rule-id { background-color: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid #475569; }
+.whitelisted-row .matched-data-box { background-color: rgba(0, 0, 0, 0.2); color: #94a3b8; border: 1px dotted #475569; }
+
+/* LIVE UPDATE */
+.auto-refresh-label { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-bright); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 600; margin-right: 15px; color: #cbd5e1; display: flex; align-items: center; transition: all 0.2s; }
+.auto-refresh-label:hover { background: rgba(255, 255, 255, 0.1); }
+.auto-refresh-label input { margin-right: 8px; cursor: pointer; }
+
+/* ==========================================
+   ANALYTICS DASHBOARD
+   ========================================== */
+.analytics-section { padding: 20px; }
+.analytics-title { color: var(--text-main); margin-bottom: 20px; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.5px; }
+
+.stats-grid { display: flex; gap: 20px; margin-bottom: 30px; }
+.stat-card { flex: 1; background-color: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.stat-card h4 { color: var(--text-muted); margin: 0 0 10px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 32px; font-weight: 700; }
+
+.stat-blue { border-left: 4px solid #3b82f6; }
+.stat-blue .stat-value { color: var(--text-main); }
+.stat-red { border-left: 4px solid var(--danger); }
+.stat-red .stat-value { color: var(--danger); }
+.stat-yellow { border-left: 4px solid var(--warning); }
+.stat-yellow .stat-value { color: var(--warning); }
+
+.analytics-panels { display: flex; gap: 20px; }
+.panel-card { flex: 1; background-color: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.panel-title { color: var(--text-main); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; font-size: 1.3rem; font-weight: 600; }
+
+.attacker-table { width: 100%; border-collapse: collapse; color: var(--text-main); }
+.attacker-table th { padding: 10px 0; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border-bright); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+.attacker-table td { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.attacker-table tr:last-child td { border-bottom: none; }
+.attacker-ip { font-family: 'Courier New', monospace; color: #fca5a5; }
+.attacker-hits { font-weight: bold; }
+.no-data { padding: 10px 0; color: var(--text-muted); font-style: italic; }
+
+.chart-wrapper { position: relative; height: 250px; width: 100%; display: flex; justify-content: center; align-items: center; }
+
+.rule-descriptions { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 15px; }
+.rule-descriptions h4 { color: var(--text-muted); margin-top: 0; margin-bottom: 15px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.rule-desc-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #bbb; }
+.rule-desc-list li { margin-bottom: 10px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
+.rule-desc-id { background: var(--bg-inner); color: var(--text-main); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+
+
+/* ==========================================
+   PENETRATION TESTING CONSOLE
+   ========================================== */
+.testing-console-section { padding: 20px; }
+.testing-title { color: var(--text-main); margin-bottom: 20px; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.5px; }
+.testing-desc { color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; font-size: 0.95rem; }
+
+.payload-buttons { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn-secondary { background-color: #4b5563; color: white; border: 1px solid #374151; }
+.btn-secondary:hover { background-color: #374151; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.btn-payload {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.btn-payload:hover {
+    background-color: rgba(99, 102, 241, 0.25);
+    color: #ffffff;
+    border-color: rgba(99, 102, 241, 0.8);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+}
+.terminal-input-group { 
+    background-color: var(--bg-main); 
+    padding: 15px 20px; 
+    border-radius: 8px; 
+    border: 1px solid var(--border); 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 24px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.terminal-prompt { color: var(--success); font-family: 'Courier New', monospace; margin-right: 15px; font-size: 16px; font-weight: bold; }
+.terminal-input { flex: 1; background: transparent; border: none; color: var(--text-main); font-family: 'Courier New', monospace; font-size: 15px; outline: none; width: 100%; }
+
+.iframe-container { background-color: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-lg); }
+.iframe-header { background-color: var(--bg-inner); padding: 10px 15px; font-size: 12px; color: #cbd5e1; font-family: 'Courier New', monospace; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; }
+.iframe-loader { display: none; color: var(--warning); font-weight: 600; }
+
+.attack-iframe { 
+    width: 100%; 
+    height: 70vh;
+    min-height: 800px;
+    border: none; 
+    background-color: #ffffff; 
+    display: block;
+}
+
+
+
+/* ==========================================================================
+   Keresőmotor és Szűrő (Filter) stílusok
+   ========================================================================== */
+.search-form {
+    display: inline-block;
+    margin-right: 15px;
+}
+
+.inline-form {
+    display: inline-block;
+}
+
+.filter-input {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-input:focus {
+    border-color: #3b82f6;
+}
+
+/* ==========================================================================
+   Lapozó (Pagination) stílusok
+   ========================================================================== */
+.pagination-container {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.pagination-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-total {
+    font-size: 0.85em;
+    color: #6b7280;
+}
+
+/* Letiltott (disabled) gombok stílusa */
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Megakadályozza a kattintást is */
+}
+
+/* ==========================================================================
+   Analitika - IP Link stílusok
+   ========================================================================== */
+.ip-link {
+    color: #3b82f6;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.ip-link:hover {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   Analitika - GeoIP (Zászlók és Országok)
+   ========================================================================== */
+.geo-info {
+    font-size: 0.85em;
+    margin-left: 10px;
+    color: #6b7280;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}

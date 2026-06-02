@@ -14,8 +14,8 @@ $BASIC_AUTH_PASS_HASH = '$2y$10$/Mv1VZfexCsbnDLzifRiJ.qH9zJbfHJc/zNIJaeJuNFWkmn1
 
 define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'modsec_db');
-define('DB_USER', 'waf_user');
-define('DB_PASS', 'WafAdmin123!');
+define('DB_USER', 'mate');
+define('DB_PASS', 'Admin123!');
 
 try {
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS, [

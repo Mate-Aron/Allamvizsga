@@ -1,41 +1,20 @@
 <?php
-$all_logs = parse_modsec_log($AUDIT_LOG, $MAX_ENTRIES);
+$total_events = $pdo->query("SELECT COUNT(*) FROM audit_logs")->fetchColumn();
+$blocked_count = $pdo->query("SELECT COUNT(*) FROM audit_logs WHERE final_action = 'BLOCKED'")->fetchColumn();
 
-$total_events      = count($all_logs);
-$blocked_count     = 0;
-$ip_stats          = [];
-$time_stats        = [];
-$uri_stats         = [];
-$attack_type_stats = [];
-$method_stats      = [];
-
-foreach ($all_logs as $log) {
-    if ($log['final_action'] === 'BLOCKED') $blocked_count++;
-
-    $ip_stats[$log['source_ip']]     = ($ip_stats[$log['source_ip']] ?? 0) + 1;
-    $uri_stats[$log['uri']]          = ($uri_stats[$log['uri']] ?? 0) + 1;
-    $attack_type_stats[$log['attack_type']] = ($attack_type_stats[$log['attack_type']] ?? 0) + 1;
-    $method_stats[$log['method']]    = ($method_stats[$log['method']] ?? 0) + 1;
-
-    if (preg_match('/\:(\d{2})\:\d{2}\:\d{2}/', $log['time'], $m)) {
-        $hour = $m[1] . ':00';
-        $time_stats[$hour] = ($time_stats[$hour] ?? 0) + 1;
-    }
-}
-
-arsort($ip_stats);          $top_ips  = array_slice($ip_stats, 0, 50, true);
-arsort($uri_stats);         $top_uris = array_slice($uri_stats, 0, 5, true);
-arsort($attack_type_stats);
-ksort($time_stats);
+$top_ips = $pdo->query("SELECT source_ip, COUNT(*) as c FROM audit_logs GROUP BY source_ip ORDER BY c DESC LIMIT 50")->fetchAll(PDO::FETCH_KEY_PAIR);
+$top_uris = $pdo->query("SELECT uri, COUNT(*) as c FROM audit_logs GROUP BY uri ORDER BY c DESC LIMIT 5")->fetchAll(PDO::FETCH_KEY_PAIR);
+$attack_type_stats = $pdo->query("SELECT attack_type, COUNT(*) as c FROM audit_logs GROUP BY attack_type ORDER BY c DESC")->fetchAll(PDO::FETCH_KEY_PAIR);
+$time_stats = $pdo->query("SELECT DATE_FORMAT(log_time, '%H:00') as h, COUNT(*) as c FROM audit_logs GROUP BY h ORDER BY h")->fetchAll(PDO::FETCH_KEY_PAIR);
 
 $blocked_percent = $total_events > 0 ? round(($blocked_count / $total_events) * 100) : 0;
 
-$trend_labels  = json_encode(array_keys($time_stats));
-$trend_data    = json_encode(array_values($time_stats));
-$uri_labels    = json_encode(array_keys($top_uris));
-$uri_data      = json_encode(array_values($top_uris));
-$attack_labels = json_encode(array_keys($attack_type_stats));
-$attack_data   = json_encode(array_values($attack_type_stats));
+$trend_labels  = json_encode(array_keys($time_stats ?: []));
+$trend_data    = json_encode(array_values($time_stats ?: []));
+$uri_labels    = json_encode(array_keys($top_uris ?: []));
+$uri_data      = json_encode(array_values($top_uris ?: []));
+$attack_labels = json_encode(array_keys($attack_type_stats ?: []));
+$attack_data   = json_encode(array_values($attack_type_stats ?: []));
 ?>
 
 <div class="dashboard-section analytics-section">

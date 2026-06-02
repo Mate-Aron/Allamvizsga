@@ -1,23 +1,46 @@
 <?php
 $search_ip = trim($_GET['search_ip'] ?? '');
-$raw_logs  = parse_modsec_log($AUDIT_LOG, $MAX_ENTRIES);
+$items_per_page = 20;
+$p = max(1, (int)($_GET['p'] ?? 1));
+$offset = ($p - 1) * $items_per_page;
 
-// IP szűrés
-$filtered_logs = [];
+$where = "1=1";
+$params = [];
 if ($search_ip !== '') {
-    foreach ($raw_logs as $l) {
-        if (strpos($l['source_ip'], $search_ip) !== false) $filtered_logs[] = $l;
-    }
-} else {
-    $filtered_logs = $raw_logs;
+    $where .= " AND source_ip = ?";
+    $params[] = $search_ip;
 }
 
-// Lapozás
-$items_per_page    = 20;
-$total_items       = count($filtered_logs);
-$total_pages       = max(1, (int)ceil($total_items / $items_per_page));
-$p                 = max(1, min((int)($_GET['p'] ?? 1), $total_pages));
-$current_page_logs = array_slice($filtered_logs, ($p - 1) * $items_per_page, $items_per_page);
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM audit_logs WHERE $where");
+$stmt->execute($params);
+$total_items = $stmt->fetchColumn();
+$total_pages = max(1, (int)ceil($total_items / $items_per_page));
+
+$stmt = $pdo->prepare("SELECT * FROM audit_logs WHERE $where ORDER BY log_time DESC LIMIT :limit OFFSET :offset");
+foreach ($params as $key => $val) {
+    $stmt->bindValue($key + 1, $val);
+}
+$stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+$db_logs = $stmt->fetchAll();
+
+$current_page_logs = [];
+foreach ($db_logs as $row) {
+    $current_page_logs[] = [
+        'id'             => $row['id'],
+        'time'           => $row['log_time'],
+        'source_ip'      => $row['source_ip'],
+        'method'         => $row['method'],
+        'uri'            => $row['uri'],
+        'hostname'       => $row['hostname'],
+        'attack_type'    => $row['attack_type'],
+        'final_action'   => $row['final_action'],
+        'root_cause_ids' => json_decode($row['root_cause_ids'], true) ?? [],
+        'rule_details'   => json_decode($row['rule_details'], true) ?? [],
+        'raw'            => $row['raw_log']
+    ];
+}
 ?>
 
 <div class="log-container">
@@ -42,13 +65,12 @@ $current_page_logs = array_slice($filtered_logs, ($p - 1) * $items_per_page, $it
             <label class="auto-refresh-label">
                 <input type="checkbox" id="autoRefresh" checked> 🔴 Live Update
             </label>
-            <span class="log-source">Source: <?= h(basename($AUDIT_LOG)) ?></span>
         </div>
     </div>
 
     <div id="live-logs-wrapper">
         <?php if (empty($current_page_logs)): ?>
-            <div class="info-box">The file is not readable or empty: <code><?= h($AUDIT_LOG) ?></code></div>
+            <div class="info-box">No logs found in the database.</div>
         <?php else: ?>
 
             <?php foreach ($current_page_logs as $log):
@@ -214,7 +236,6 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(err => console.error('Refresh error:', err));
     }, 3000);
 
-    // Ha valaki megnyit egy raw log panelt, pausálunk
     document.addEventListener('click', function (e) {
         if (e.target.closest('.raw-log-details')) {
             isPaused = !isPaused;

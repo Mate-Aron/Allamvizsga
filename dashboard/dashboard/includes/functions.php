@@ -152,7 +152,7 @@ function getNextRuleId($filePath, $baseId = 1000000) {
 }
 
 function restart_httpd() {
-    $flag = '/var/www/html/studentworks/flags/restart.flag';
+    $flag = '/var/www/html/dashboard/flags/restart.flag';
     return @touch($flag);
 }
 

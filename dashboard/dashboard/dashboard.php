@@ -2,9 +2,21 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/functions.php';
-require_once __DIR__ . '/includes/log_parser.php';
+
 require_once __DIR__ . '/includes/whitelist.php';
 require_once __DIR__ . '/includes/actions.php';
+
+if (empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    $auth = $_SERVER['HTTP_AUTHORIZATION'];
+    
+    if (str_starts_with(strtolower($auth), 'basic ')) {
+        $decoded = base64_decode(substr($auth, 6));
+        [$user, $pass] = explode(':', $decoded, 2);
+        $_SERVER['PHP_AUTH_USER'] = $user;
+        $_SERVER['PHP_AUTH_PW']   = $pass ?? '';
+    }
+}
+
 
 $provided_user = $_SERVER['PHP_AUTH_USER'] ?? null;
 $provided_pw   = $_SERVER['PHP_AUTH_PW'] ?? null;

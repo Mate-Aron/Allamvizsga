@@ -1,12 +1,6 @@
 <?php
 function get_whitelist_lines($whitelist_file) {
-    static $lines = null;
-    if ($lines === null) {
-        $lines = file_exists($whitelist_file)
-            ? file($whitelist_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
-            : [];
-    }
-    return $lines;
+    return file_exists($whitelist_file) ? file($whitelist_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 }
 
 function is_ip_rule_whitelisted($whitelist_file, $ip, $rid) {

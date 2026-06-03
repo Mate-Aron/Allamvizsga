@@ -1,66 +1,66 @@
 <?php
-function handle_post_action() {
-    global $WHITELIST_FILE;
+declare(strict_types=1);
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') return '';
+function handle_post_action(string $whitelist_path): ?array {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') return null;
 
     $posted_token = $_POST['csrf_token'] ?? '';
     if (empty($posted_token) || !hash_equals($_SESSION['csrf_token'], $posted_token)) {
-        return '<div class="error">Security Error: Invalid CSRF Token. Please refresh the page!</div>';
+        return ['status' => 'error', 'msg' => 'Security Error: Invalid CSRF Token.'];
     }
 
     $action = $_POST['action'] ?? '';
 
-    if (!is_writable($WHITELIST_FILE) && $action !== 'save_file') {
-        return "<div class='error'>Error: The whitelist file is not writable.<br>$WHITELIST_FILE</div>";
+    if (!is_writable($whitelist_path) && $action !== 'save_file' && $action !== 'restart_httpd') {
+        return ['status' => 'error', 'msg' => 'Error: The whitelist file is not writable.'];
     }
 
     switch ($action) {
         case 'disable_target':
-            $rid       = $_POST['rule_id'];
-            $source_ip = $_POST['source_ip'];
-            $unique_id = getNextRuleId($WHITELIST_FILE, 1000004);
+            $rid       = (string)($_POST['rule_id'] ?? '');
+            $source_ip = (string)($_POST['source_ip'] ?? '');
+            $unique_id = next_rule_id($whitelist_path, 1000004);
             $line = "SecRule REMOTE_ADDR \"@ipMatch $source_ip\" \"id:$unique_id,phase:1,pass,nolog,ctl:ruleRemoveById=$rid\"\n";
-            if (atomic_append_file($WHITELIST_FILE, $line)) {
-                return "<div class='success'>✓ IP $source_ip whitelisted for rule $rid (New ID: $unique_id)</div>";
+            if (append_to_file($whitelist_path, $line)) {
+                return ['status' => 'success', 'msg' => "✓ IP $source_ip whitelisted for rule $rid (New ID: $unique_id)"];
             }
-            return "<div class='error'>Save failed. Permission denied.</div>";
+            return ['status' => 'error', 'msg' => 'Save failed. Permission denied.'];
 
         case 'undo_whitelist':
-            $rid       = $_POST['rule_id'];
-            $source_ip = $_POST['source_ip'];
-            $res = remove_line_from_file($WHITELIST_FILE, [$source_ip, "ruleRemoveById=$rid"]);
-            if ($res === true)  return "<div class='success'>↩ Whitelist revoked: $source_ip (Rule: $rid). ⚠️ Apache reload required!</div>";
-            if ($res === false) return "<div class='error'>Save failed. No write permission?</div>";
-            return "<div class='error'>This rule is no longer in the whitelist.</div>";
+            $rid       = (string)($_POST['rule_id'] ?? '');
+            $source_ip = (string)($_POST['source_ip'] ?? '');
+            $res = remove_matching_line($whitelist_path, [$source_ip, "ruleRemoveById=$rid"]);
+            if ($res === true)  return ['status' => 'success', 'msg' => "↩ Whitelist revoked: $source_ip (Rule: $rid). Apache reload required!"];
+            if ($res === false) return ['status' => 'error', 'msg' => 'Save failed. No write permission?'];
+            return ['status' => 'error', 'msg' => 'This rule is no longer in the whitelist.'];
 
         case 'disable_rule_globally':
-            $rid  = $_POST['rule_id'];
+            $rid  = (string)($_POST['rule_id'] ?? '');
             $line = "SecRuleRemoveById $rid\n";
-            if (atomic_append_file($WHITELIST_FILE, $line)) {
-                return "<div class='success'>Rule $rid globally disabled! ⚠️ Apache reload required!</div>";
+            if (append_to_file($whitelist_path, $line)) {
+                return ['status' => 'success', 'msg' => "Rule $rid globally disabled! Apache reload required!"];
             }
-            return "<div class='error'>Save failed. Permission denied.</div>";
+            return ['status' => 'error', 'msg' => 'Save failed. Permission denied.'];
 
         case 'undo_global_whitelist':
-            $rid = $_POST['rule_id'];
-            $res = remove_line_from_file($WHITELIST_FILE, ["SecRuleRemoveById $rid"]);
-            if ($res === true)  return "<div class='success'>↩ Global whitelist revoked (Rule: $rid). ⚠️ Apache reload required!</div>";
-            if ($res === false) return "<div class='error'>Save failed. No write permission?</div>";
-            return "<div class='error'>This rule is not globally whitelisted.</div>";
+            $rid = (string)($_POST['rule_id'] ?? '');
+            $res = remove_matching_line($whitelist_path, ["SecRuleRemoveById $rid"]);
+            if ($res === true)  return ['status' => 'success', 'msg' => "↩ Global whitelist revoked (Rule: $rid). Apache reload required!"];
+            if ($res === false) return ['status' => 'error', 'msg' => 'Save failed. No write permission?'];
+            return ['status' => 'error', 'msg' => 'This rule is not globally whitelisted.'];
 
         case 'save_file':
-            $path    = $_POST['file_path'] ?? '';
-            $content = $_POST['content'] ?? '';
-            if (allowed_local_path(basename($path)) && save_rule_text($path, $content)) {
-                return "<div class='success'>File saved successfully. Backup created.<br>⚠️ Apache reload required!</div>";
+            $path    = (string)($_POST['file_path'] ?? '');
+            $content = (string)($_POST['content'] ?? '');
+            if (is_safe_filename(basename($path)) && save_rule_file($path, $content)) {
+                return ['status' => 'success', 'msg' => 'File saved successfully. Backup created. Apache reload required!'];
             }
-            return "<div class='error'>Save failed. Permission error or invalid path.</div>";
+            return ['status' => 'error', 'msg' => 'Save failed. Permission error or invalid path.'];
 
         case 'restart_httpd':
-            if (restart_httpd()) return "<div class='success'>🔄 Apache reload signal sent!</div>";
-            return "<div class='error'>Failed to send reload signal.</div>";
+            if (restart_httpd()) return ['status' => 'success', 'msg' => 'Apache reload signal sent!'];
+            return ['status' => 'error', 'msg' => 'Failed to send reload signal.'];
     }
 
-    return '';
+    return null;
 }

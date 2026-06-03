@@ -94,7 +94,7 @@ foreach ($entries as $raw_entry) {
 }
 
 $pdo->prepare("UPDATE sync_status SET last_position = ? WHERE id = 1")->execute([$new_pos]);
-$pdo->query("DELETE FROM audit_logs WHERE log_time < NOW() - INTERVAL 90 DAY");
+$pdo->query("DELETE FROM audit_logs WHERE log_time < NOW() - INTERVAL 120 DAY");
 
 $pdo->commit();
 echo "Import complete. $imported new rows added. Position updated to $new_pos.\n";

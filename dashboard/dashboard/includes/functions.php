@@ -81,7 +81,7 @@ function parse_rules_from_file($path) {
 
         if (preg_match('/^SecRuleRemoveById\s+([0-9]+)/i', trim($fullRule), $m)) {
             $id  = $m[1];
-            $msg = "🌍 GLOBALLY DISABLED RULE";
+            $msg = "GLOBALLY DISABLED RULE";
         } elseif (stripos($fullRule, 'SecRule') !== false) {
             if (preg_match('/ctl:ruleRemoveById=([0-9]+)/i', $fullRule, $mTarget)) {
                 $target_id = $mTarget[1];
@@ -164,4 +164,24 @@ function get_test_payloads() {
         'xss'  => $base . "/?search=<script>alert('XSS')</script>",
         'lfi'  => $base . "/?file=../../../../etc/passwd",
     ];
+}
+
+/**
+ * Biztonsági ellenőrzés: csak .conf fájlokat engedélyezünk könyvtárbejárás nélkül.
+ */
+if (!function_exists('is_safe_filename')) {
+    function is_safe_filename(string $filename): bool {
+        return str_ends_with($filename, '.conf') && basename($filename) === $filename;
+    }
+}
+
+/**
+ * Szabályfájl mentése biztonsági másolat készítésével.
+ */
+if (!function_exists('save_rule_file')) {
+    function save_rule_file(string $path, string $content): bool {
+        $backup = $path . '.' . date('Ymd_His') . '.bak';
+        @copy($path, $backup);
+        return file_put_contents($path, $content) !== false;
+    }
 }

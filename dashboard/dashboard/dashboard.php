@@ -2,10 +2,10 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/functions.php';
-
 require_once __DIR__ . '/includes/whitelist.php';
 require_once __DIR__ . '/includes/actions.php';
 
+// Bejelentkezés kezelése HTTP Basic Auth segítségével
 if (empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
     $auth = $_SERVER['HTTP_AUTHORIZATION'];
     
@@ -16,7 +16,6 @@ if (empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) 
         $_SERVER['PHP_AUTH_PW']   = $pass ?? '';
     }
 }
-
 
 $provided_user = $_SERVER['PHP_AUTH_USER'] ?? null;
 $provided_pw   = $_SERVER['PHP_AUTH_PW'] ?? null;
@@ -31,7 +30,8 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-$action_result = handle_post_action();
+// Itt adjuk át a config.php-ből érkező változót a függvénynek
+$action_result = handle_post_action($WHITELIST_FILE);
 
 $page = $_GET['page'] ?? 'logs';
 $allowed_pages = ['logs', 'rules', 'edit_rule', 'analytics', 'testing'];
@@ -67,9 +67,30 @@ if (!in_array($page, $allowed_pages)) {
         </div>
     </aside>
     <main class="main-content">
-        <?= $action_result ?>
+        <?php if (is_array($action_result)): ?>
+            <div id="flash-message" class="flash-alert flash-<?= h($action_result['status']) ?>">
+                <?= h($action_result['msg']) ?>
+            </div>
+        <?php endif; ?>
+
         <?php require_once __DIR__ . '/pages/' . $page . '.php'; ?>
     </main>
-</div>
+</div> 
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const flashMessage = document.getElementById('flash-message');
+    
+    if (flashMessage) {
+        setTimeout(() => {
+            flashMessage.style.opacity = '0';
+            setTimeout(() => {
+                flashMessage.remove();
+            }, 500);
+        }, 2000);
+    }
+});
+</script>
+
 </body>
 </html>

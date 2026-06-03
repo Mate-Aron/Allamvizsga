@@ -1,34 +1,27 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../config.php';
 
-function h($s) {
+function h(?string $s): string {
     return htmlspecialchars($s ?? '', ENT_QUOTES | ENT_SUBSTITUTE);
 }
 
-function atomic_append_file($filename, $content) {
-    return file_put_contents($filename, trim($content) . "\n", FILE_APPEND) !== false;
-}
-
-function allowed_local_path($filename) {
+function is_safe_filename(string $filename): bool {
     return str_ends_with($filename, '.conf') && basename($filename) === $filename;
 }
 
-function save_rule_text($path, $content) {
+function append_to_file(string $filename, string $content): bool {
+    return file_put_contents($filename, trim($content) . "\n", FILE_APPEND) !== false;
+}
+
+function save_rule_file(string $path, string $content): bool {
+    $backup = $path . '.' . date('Ymd_His') . '.bak';
+    @copy($path, $backup);
     return file_put_contents($path, $content) !== false;
 }
 
-function list_rule_files($dir) {
-    if (!is_dir($dir)) return [];
-    $out = [];
-    foreach (scandir($dir) as $f) {
-        if ($f !== '.' && $f !== '..' && str_ends_with($f, '.conf')) {
-            $out[] = rtrim($dir, '/') . '/' . $f;
-        }
-    }
-    return $out;
-}
-
-function remove_line_from_file($file, $match_conditions) {
+function remove_matching_line(string $file, array $match_conditions): ?bool {
     if (!file_exists($file)) return null;
 
     $lines     = file($file, FILE_IGNORE_NEW_LINES);
@@ -43,7 +36,7 @@ function remove_line_from_file($file, $match_conditions) {
                 break;
             }
         }
-        if ($matches_all) {
+        if ($matches_all && !$found) {
             $found = true;
             continue;
         }
@@ -56,7 +49,31 @@ function remove_line_from_file($file, $match_conditions) {
     return null;
 }
 
-function parse_rules_from_file($path) {
+function list_rule_files(string $dir): array {
+    if (!is_dir($dir)) return [];
+    
+    $out = [];
+    foreach (scandir($dir) as $f) {
+        if (str_ends_with($f, '.conf')) {
+            $out[] = rtrim($dir, '/') . '/' . $f;
+        }
+    }
+    return $out;
+}
+
+
+
+function next_rule_id(string $filePath, int $baseId = 1000000): int {
+    if (!file_exists($filePath) || filesize($filePath) === 0) return $baseId;
+
+    $content = file_get_contents($filePath);
+    if (preg_match_all('/id:(\d+)/', $content, $matches)) {
+        return max($matches[1]) + 1;
+    }
+    return $baseId;
+}
+
+function parse_rules_from_file(string $path): array {
     if (!file_exists($path) || !($handle = fopen($path, "r"))) return [];
 
     $out    = [];
@@ -67,7 +84,7 @@ function parse_rules_from_file($path) {
 
         if ($buffer === '' && ($trimmed === '' || $trimmed[0] === '#')) continue;
 
-        if (substr($trimmed, -1) === '\\') {
+        if (str_ends_with($trimmed, '\\')) {
             $buffer .= rtrim(substr($trimmed, 0, -1)) . ' ';
             continue;
         }
@@ -112,52 +129,14 @@ function parse_rules_from_file($path) {
     return $out;
 }
 
-function render_rules_table($rules, $is_editable = false) {
-    if (empty($rules)) return '<p class="empty-state">No rules found.</p>';
-
-    $html  = '<table class="rules-table"><thead><tr>';
-    $html .= '<th class="col-id">ID</th><th>Message / Pattern</th><th>File</th>';
-    if ($is_editable) $html .= '<th>Action</th>';
-    $html .= '</tr></thead><tbody>';
-
-    foreach ($rules as $r) {
-        $html .= '<tr>';
-        $html .= '<td><strong>' . h($r['id'] ?? '-') . '</strong></td>';
-        $html .= '<td><div class="rule-msg">' . h($r['msg'] ?? 'No Description') . '</div>';
-        $html .= '<details class="rule-details"><summary>Show Code</summary>';
-        $html .= '<code class="rule-code">' . h($r['pattern']) . '</code></details></td>';
-        $html .= '<td class="file-name">' . h(basename($r['file'])) . '</td>';
-        if ($is_editable) {
-            $html .= '<td>';
-            if (allowed_local_path(basename($r['file']))) {
-                $html .= '<a href="?page=edit_rule&file=' . urlencode(basename($r['file'])) . '" class="btn btn-sm">Edit</a>';
-            }
-            $html .= '</td>';
-        }
-        $html .= '</tr>';
-    }
-
-    $html .= '</tbody></table>';
-    return $html;
-}
-
-function getNextRuleId($filePath, $baseId = 1000000) {
-    if (!file_exists($filePath) || filesize($filePath) === 0) return $baseId;
-
-    $content = file_get_contents($filePath);
-    if (preg_match_all('/id:(\d+)/', $content, $matches)) {
-        return max($matches[1]) + 1;
-    }
-    return $baseId;
-}
-
-function restart_httpd() {
+function restart_httpd(): bool {
     $flag = '/var/www/html/dashboard/flags/restart.flag';
     return @touch($flag);
 }
 
-function get_test_payloads() {
-    $base = "https://studentworks.ms.sapientia.ro";
+function get_test_payloads(): array {
+    $base = 'https://studentworks.ms.sapientia.ro';
+
     return [
         'base' => $base,
         'sqli' => $base . "/?id=1' OR '1'='1",
@@ -166,22 +145,45 @@ function get_test_payloads() {
     ];
 }
 
-/**
- * Biztonsági ellenőrzés: csak .conf fájlokat engedélyezünk könyvtárbejárás nélkül.
- */
-if (!function_exists('is_safe_filename')) {
-    function is_safe_filename(string $filename): bool {
-        return str_ends_with($filename, '.conf') && basename($filename) === $filename;
+function render_rules_table(array $rules, bool $is_editable = false): string {
+    if (empty($rules)) {
+        return '<p class="empty-state">No rules found.</p>';
     }
-}
 
-/**
- * Szabályfájl mentése biztonsági másolat készítésével.
- */
-if (!function_exists('save_rule_file')) {
-    function save_rule_file(string $path, string $content): bool {
-        $backup = $path . '.' . date('Ymd_His') . '.bak';
-        @copy($path, $backup);
-        return file_put_contents($path, $content) !== false;
-    }
+    ob_start();
+    ?>
+    <table class="rules-table">
+        <thead>
+            <tr>
+                <th class="col-id">ID</th>
+                <th>Message / Pattern</th>
+                <th>File</th>
+                <?php if ($is_editable): ?><th>Action</th><?php endif; ?>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($rules as $r): ?>
+                <tr>
+                    <td><strong><?= h((string)($r['id'] ?? '-')) ?></strong></td>
+                    <td>
+                        <div class="rule-msg"><?= h($r['msg'] ?? 'No Description') ?></div>
+                        <details class="rule-details">
+                            <summary>Show Code</summary>
+                            <code class="rule-code"><?= h($r['pattern']) ?></code>
+                        </details>
+                    </td>
+                    <td class="file-name"><?= h(basename($r['file'])) ?></td>
+                    <?php if ($is_editable): ?>
+                        <td>
+                            <?php if (is_safe_filename(basename($r['file']))): ?>
+                                <a href="?page=edit_rule&file=<?= urlencode(basename($r['file'])) ?>" class="btn btn-sm">Edit</a>
+                            <?php endif; ?>
+                        </td>
+                    <?php endif; ?>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php
+    return ob_get_clean();
 }

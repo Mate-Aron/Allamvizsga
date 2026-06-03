@@ -1,9 +1,10 @@
 <?php
 $search_ip = trim($_GET['search_ip'] ?? '');
-$items_per_page = 20;
+$items_per_page = 15;
 $p = max(1, (int)($_GET['p'] ?? 1));
 $offset = ($p - 1) * $items_per_page;
 
+// lekérdetés könnyítése érekében
 $where = "1=1";
 if ($search_ip !== '') {
     $where .= " AND source_ip = :source_ip";
@@ -60,7 +61,7 @@ foreach ($db_logs as $row) {
             <form method="post" class="inline-form">
                 <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
                 <input type="hidden" name="action" value="restart_httpd">
-                <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">🔄 Restart Apache</button>
+                <button type="submit" class="btn btn-warning btn-sm" title="Apply whitelist changes">Restart Apache</button>
             </form>
 
             <label class="auto-refresh-label">

@@ -4,13 +4,12 @@ $RULES_DIR_ACTIVATED = '/etc/httpd/modsecurity.d/activated_rules';
 $RULES_DIR_LOCAL     = '/etc/httpd/modsecurity.d/local_rules';
 $WHITELIST_FILE      = '/etc/httpd/modsecurity.d/whitelist.conf';
 
-$MAX_ENTRIES = 3000;
 
 $INFRA_RULES = [949110, 980130, 949100, 959100];
 
 // Generate password: php -r "echo password_hash('your_password', PASSWORD_DEFAULT);"
-$BASIC_AUTH_USER = 'admin';
-$BASIC_AUTH_PASS_HASH = '$2y$10$/Mv1VZfexCsbnDLzifRiJ.qH9zJbfHJc/zNIJaeJuNFWkmn1RitfO'; // admin123
+$BASIC_AUTH_USER = 'WafAdministrator';
+$BASIC_AUTH_PASS_HASH = '$2y$12$ljmwwv8wyzaUtOaJ7HSxl.JW5tmnKcCj7HP6FNA9KVjIX49dgkwFK'; // Erosebb jelszó
 
 define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'modsec_db');

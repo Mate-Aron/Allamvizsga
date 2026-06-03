@@ -5,20 +5,21 @@ $p = max(1, (int)($_GET['p'] ?? 1));
 $offset = ($p - 1) * $items_per_page;
 
 $where = "1=1";
-$params = [];
 if ($search_ip !== '') {
-    $where .= " AND source_ip = ?";
-    $params[] = $search_ip;
+    $where .= " AND source_ip = :source_ip";
 }
 
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM audit_logs WHERE $where");
-$stmt->execute($params);
+if ($search_ip !== '') {
+    $stmt->bindValue(':source_ip', $search_ip);
+}
+$stmt->execute();
 $total_items = $stmt->fetchColumn();
 $total_pages = max(1, (int)ceil($total_items / $items_per_page));
 
 $stmt = $pdo->prepare("SELECT * FROM audit_logs WHERE $where ORDER BY log_time DESC LIMIT :limit OFFSET :offset");
-foreach ($params as $key => $val) {
-    $stmt->bindValue($key + 1, $val);
+if ($search_ip !== '') {
+    $stmt->bindValue(':source_ip', $search_ip);
 }
 $stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);

@@ -109,6 +109,11 @@ foreach ($db_logs as $row) {
                         <div class="root-causes">
                             <strong>Activated Rules:</strong>
                             <?php foreach ($log['root_cause_ids'] as $rid):
+                                // Pontozó és infrastruktúra szabályok elrejtése a config.php alapján
+                                if (in_array($rid, $INFRA_RULES)) {
+                                    continue;
+                                }
+
                                 $details         = $log['rule_details'][$rid] ?? [];
                                 $severity        = $details['severity'] ?? 'NOTICE';
                                 $severityClass   = 'severity-' . strtolower($severity);
